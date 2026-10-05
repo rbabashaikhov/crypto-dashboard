@@ -1,0 +1,19 @@
+import os
+
+# Single-process demo: SQLite metadata in the superset_home volume, no Redis, no Celery.
+SECRET_KEY = os.environ["SUPERSET_SECRET_KEY"]
+SQLALCHEMY_DATABASE_URI = "sqlite:////app/superset_home/superset.db"
+
+CACHE_CONFIG = {"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 300}
+DATA_CACHE_CONFIG = CACHE_CONFIG
+FILTER_STATE_CACHE_CONFIG = CACHE_CONFIG
+EXPLORE_FORM_DATA_CACHE_CONFIG = CACHE_CONFIG
+RATELIMIT_STORAGE_URI = "memory://"
+
+FEATURE_FLAGS = {
+    "GLOBAL_ASYNC_QUERIES": False,
+    "ALERT_REPORTS": False,
+}
+
+ROW_LIMIT = 10000
+SUPERSET_WEBSERVER_TIMEOUT = 60

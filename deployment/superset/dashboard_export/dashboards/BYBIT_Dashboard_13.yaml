@@ -1,0 +1,243 @@
+dashboard_title: BYBIT Dashboard
+description: null
+css: ''
+slug: null
+certified_by: ''
+certification_details: ''
+published: true
+uuid: 63182cb4-866e-4ac4-8eca-5d283e827b9f
+position:
+  CHART-explore-394-1:
+    children: []
+    id: CHART-explore-394-1
+    meta:
+      chartId: 394
+      height: 50
+      sliceName: Price trend
+      uuid: 439d051f-6560-4a0c-bb6d-85ae34b0c7fa
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-ueHP3TMn0TqYi4a8ELWsW
+    type: CHART
+  CHART-explore-395-1:
+    children: []
+    id: CHART-explore-395-1
+    meta:
+      chartId: 395
+      height: 50
+      sliceName: Volume trend
+      uuid: 99f5f46e-7972-435c-b8a6-5493e015b9f6
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-bLEMUJx9Jo9UOlaEZHdDr
+    type: CHART
+  CHART-explore-396-1:
+    children: []
+    id: CHART-explore-396-1
+    meta:
+      chartId: 396
+      height: 50
+      sliceName: Last day table
+      uuid: c2c20fc9-9b3d-4935-ad93-0187d7d25217
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-qmmw5u3rP-LScFPoX5FMe
+    type: CHART
+  CHART-explore-397-1:
+    children: []
+    id: CHART-explore-397-1
+    meta:
+      chartId: 397
+      height: 50
+      sliceName: BTC Waterfall
+      uuid: 44c3444d-00b8-46b3-94ff-b0508a13f42e
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-Tryb67vTD7iBSjGspsMQP
+    type: CHART
+  CHART-explore-398-1:
+    children: []
+    id: CHART-explore-398-1
+    meta:
+      chartId: 398
+      height: 50
+      sliceName: ETH Waterfall
+      uuid: 56ab8b42-84b4-41ea-a05d-a0da12ce8921
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-b2xqT_ykFhGOEwPf3PyMY
+    type: CHART
+  CHART-explore-399-1:
+    children: []
+    id: CHART-explore-399-1
+    meta:
+      chartId: 399
+      height: 50
+      sliceName: SOL Waterfall
+      uuid: 6162913a-689b-44ef-bde2-d3f7a182737d
+      width: 6
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    - ROW-yaoZJ9AZuYtFUh2xu2z9y
+    type: CHART
+  DASHBOARD_VERSION_KEY: v2
+  GRID_ID:
+    children:
+    - ROW-ueHP3TMn0TqYi4a8ELWsW
+    - ROW-bLEMUJx9Jo9UOlaEZHdDr
+    - ROW-b2xqT_ykFhGOEwPf3PyMY
+    id: GRID_ID
+    parents:
+    - ROOT_ID
+    type: GRID
+  HEADER_ID:
+    id: HEADER_ID
+    meta:
+      text: BYBIT Dashboard
+    type: HEADER
+  ROOT_ID:
+    children:
+    - GRID_ID
+    id: ROOT_ID
+    type: ROOT
+  ROW-b2xqT_ykFhGOEwPf3PyMY:
+    children:
+    - CHART-explore-398-1
+    - CHART-explore-399-1
+    id: ROW-b2xqT_ykFhGOEwPf3PyMY
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  ROW-bLEMUJx9Jo9UOlaEZHdDr:
+    children:
+    - CHART-explore-394-1
+    - CHART-explore-395-1
+    id: ROW-bLEMUJx9Jo9UOlaEZHdDr
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+  ROW-ueHP3TMn0TqYi4a8ELWsW:
+    children:
+    - CHART-explore-396-1
+    - CHART-explore-397-1
+    id: ROW-ueHP3TMn0TqYi4a8ELWsW
+    meta:
+      '0': ROOT_ID
+      background: BACKGROUND_TRANSPARENT
+    parents:
+    - ROOT_ID
+    - GRID_ID
+    type: ROW
+metadata:
+  chart_configuration:
+    '394':
+      id: 394
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 395
+        - 396
+        - 397
+        - 398
+        - 399
+    '395':
+      id: 395
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 394
+        - 396
+        - 397
+        - 398
+        - 399
+    '396':
+      id: 396
+      crossFilters:
+        scope: global
+        chartsInScope:
+        - 394
+        - 395
+        - 397
+        - 398
+        - 399
+  global_chart_configuration:
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded: []
+    chartsInScope:
+    - 394
+    - 395
+    - 396
+    - 397
+    - 398
+    - 399
+  map_label_colors:
+    BTCUSDT: '#1FA8C9'
+    ETHUSDT: '#454E7C'
+    SOLUSDT: '#5AC189'
+  timed_refresh_immune_slices: []
+  expanded_slices: {}
+  refresh_frequency: 0
+  color_scheme: ''
+  label_colors: {}
+  shared_label_colors:
+  - BTCUSDT
+  - ETHUSDT
+  - SOLUSDT
+  color_scheme_domain: []
+  cross_filters_enabled: true
+  default_filters: '{}'
+  native_filter_configuration:
+  - id: NATIVE_FILTER-X-fJPcqC3wM8-nQUW4hdz
+    controlValues:
+      enableEmptyFilter: false
+      defaultToFirstItem: false
+      multiSelect: true
+      searchAllOptions: false
+      inverseSelection: false
+    name: Symbol
+    filterType: filter_select
+    targets:
+    - column:
+        name: symbol
+      datasetUuid: 25dee733-fbd9-4b75-bc2e-78a0e4e1c7c8
+    defaultDataMask:
+      extraFormData: {}
+      filterState: {}
+      ownState: {}
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded:
+      - 396
+      - 397
+      - 398
+      - 399
+    type: NATIVE_FILTER
+    description: ''
+    chartsInScope:
+    - 394
+    - 395
+    tabsInScope: []
+version: 1.0.0

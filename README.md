@@ -13,6 +13,7 @@ Bybit API -> Airflow DAG -> ClickHouse raw table -> ClickHouse CDM tables -> BI-
 - `archive/standalone_etl/bybit_to_clickhouse.py` - early standalone ETL prototype kept for reference
 - `requirements.txt` - Python dependencies
 - `.env.example` - environment variable template
+- `deployment/` - static demo deployment: ClickHouse snapshot + Superset dashboard on a VPS (see `deployment/README.md`)
 
 ## What the DAG does
 

@@ -9,3 +9,6 @@ __pycache__/
 .ipynb_checkpoints/
 .idea/
 .DS_Store
+
+# Generated ClickHouse snapshot data (transferred with rsync, not committed)
+deployment/clickhouse/snapshot/
