@@ -99,9 +99,10 @@ the source ids in `chartsInScope`, which would detach the Symbol filter from its
 
 ## Known issues
 
-- **Gap in history.** Ingestion is a rolling refresh of the last 200 candles (~8 days);
-  historical backfill is not implemented, so the series has no data between 2026-04-24
-  and 2026-09-27.
+- **Gap in the VPS snapshot.** The current VPS snapshot predates the backfill and has no
+  data for 2026-03-23 21:00 .. 2026-04-16 12:00 and 2026-04-24 21:00 .. 2026-09-27 02:00.
+  The local dataset is continuous now; export and restore a new snapshot to update the VPS.
+- **First waterfall step** equals the first day's full average price (see main README).
 - **Time zones.** `open_time` is UTC (from Bybit), `loaded_at` is UTC+3.
 - **VPS raw table engine.** The VPS ClickHouse was created before raw became a
   `ReplacingMergeTree` and still has the old `MergeTree` raw table. Its data is the

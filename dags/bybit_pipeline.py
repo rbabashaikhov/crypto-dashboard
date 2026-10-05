@@ -31,7 +31,9 @@ UTC_PLUS_3 = timezone(timedelta(hours=3))
 default_args = {
     "owner": "airflow",
     "start_date": datetime(2026, 3, 1),
-    "retries": 0,  # для отладки быстрее
+    # Transient Bybit/DNS failures happen; re-running a task is safe (idempotent raw).
+    "retries": 2,
+    "retry_delay": timedelta(seconds=45),
 }
 
 dag = DAG(

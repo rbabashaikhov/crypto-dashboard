@@ -12,7 +12,9 @@ Bybit API -> Airflow DAG -> ClickHouse raw table -> ClickHouse CDM tables -> BI-
 - `sql/create_tables.sql` - DDL for raw and CDM tables used by the DAG
 - `sql/migrations/` - one-off migrations for existing ClickHouse installs
 - `airflow/` - Airflow image with the DAG's Python dependencies (`Dockerfile`, `requirements.txt`)
+- `tools/backfill_bybit.py` - CLI to backfill historical candles for an explicit time range
 - `tests/check_idempotency.sh` - regression test: two back-to-back DAG runs add no duplicates
+- `tests/test_backfill_bybit.py` - unit/integration tests for the backfill CLI
 - `archive/standalone_etl/bybit_to_clickhouse.py` - early standalone ETL prototype kept for reference
 - `requirements.txt` - Python dependencies
 - `.env.example` - environment variable template
@@ -52,14 +54,35 @@ Bybit API -> Airflow DAG -> ClickHouse raw table -> ClickHouse CDM tables -> BI-
    (or run it once with `airflow dags test bybit_pipeline`).
 4. Optional regression check: `CH_PASSWORD=... tests/check_idempotency.sh`
 
+## Historical backfill
+
+The hourly DAG only refreshes the latest 200 candles. To fill older or missed
+periods, run `tools/backfill_bybit.py` for an explicit UTC range (inclusive, whole hours).
+It pages through Bybit V5 klines 1000 candles at a time, retries DNS/connection errors,
+timeouts, 429/5xx and rate limits, and inserts into the same raw table with the DAG's
+mapping. Re-running a range does not add logical candles.
+
+```bash
+# from the repository root, using the Airflow image (has all dependencies)
+docker run --rm --network airflow_default -v "$PWD":/repo -w /repo \
+  -e CLICKHOUSE_PASSWORD=... --entrypoint python crypto-dashboard-airflow:2.10.0 \
+  tools/backfill_bybit.py --all --start 2026-04-24T21:00 --end 2026-09-27T02:00 --dry-run
+# drop --dry-run to write, then rebuild CDM: airflow dags test bybit_pipeline
+```
+
+Tests: same `docker run` with `-m unittest discover -s tests -v` instead of the tool path.
+
 `requirements.txt` and `.env.example` in the repository root are for running the notebook /
 archived standalone ETL outside Airflow (`pip install -r requirements.txt`, `cp .env.example .env`).
 
 ## Limitations
 
-- Ingestion is an incremental, rolling refresh of the latest 200 hourly candles.
-  Full historical backfill is not implemented: if the DAG does not run for more than
-  ~8 days, the missing period stays as a gap (currently 2026-04-24 .. 2026-09-27).
+- The DAG is an incremental, rolling refresh of the latest 200 hourly candles. If it does
+  not run for more than ~8 days, the missed period has to be filled with
+  `tools/backfill_bybit.py` (not automatic). The local history was backfilled on
+  2026-10-05 and is continuous from 2026-03-12 05:00 UTC.
+- Waterfall CDM: `lagInFrame` returns `0` (not `NULL`) for the first day, so the first
+  waterfall step equals that day's full average price instead of a change.
 - `open_time` is UTC (as returned by Bybit); `loaded_at` is UTC+3.
 - Raw readers must use `FINAL` (or `argMax(..., loaded_at)`): between background
   merges the table can physically hold several versions of the same candle.
