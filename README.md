@@ -15,6 +15,7 @@ Bybit API -> Airflow DAG -> ClickHouse raw table -> ClickHouse CDM tables -> BI-
 - `tools/backfill_bybit.py` - CLI to backfill historical candles for an explicit time range
 - `tests/check_idempotency.sh` - regression test: two back-to-back DAG runs add no duplicates
 - `tests/test_backfill_bybit.py` - unit/integration tests for the backfill CLI
+- `tests/check_waterfall.sh` - regression test: the first day never becomes a waterfall delta
 - `archive/standalone_etl/bybit_to_clickhouse.py` - early standalone ETL prototype kept for reference
 - `requirements.txt` - Python dependencies
 - `.env.example` - environment variable template
@@ -81,8 +82,6 @@ archived standalone ETL outside Airflow (`pip install -r requirements.txt`, `cp 
   not run for more than ~8 days, the missed period has to be filled with
   `tools/backfill_bybit.py` (not automatic). The local history was backfilled on
   2026-10-05 and is continuous from 2026-03-12 05:00 UTC.
-- Waterfall CDM: `lagInFrame` returns `0` (not `NULL`) for the first day, so the first
-  waterfall step equals that day's full average price instead of a change.
 - `open_time` is UTC (as returned by Bybit); `loaded_at` is UTC+3.
 - Raw readers must use `FINAL` (or `argMax(..., loaded_at)`): between background
   merges the table can physically hold several versions of the same candle.

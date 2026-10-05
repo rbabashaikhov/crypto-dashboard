@@ -230,6 +230,8 @@ def refresh_cdm():
     # -----------------------------
     # WATERFALL BTC
     # -----------------------------
+    # lagInFrame on a non-Nullable column returns 0 for the first row; toNullable
+    # makes it NULL, so the first day is dropped instead of becoming a full-price delta.
     client.execute("TRUNCATE TABLE cdm.bybit_waterfall_btc")
     client.execute("""
         INSERT INTO cdm.bybit_waterfall_btc
@@ -244,7 +246,7 @@ def refresh_cdm():
         changes AS (
             SELECT
                 dt,
-                close - lagInFrame(close) OVER (
+                close - lagInFrame(toNullable(close)) OVER (
                     ORDER BY dt
                     ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING
                 ) AS delta
@@ -275,7 +277,7 @@ def refresh_cdm():
         changes AS (
             SELECT
                 dt,
-                close - lagInFrame(close) OVER (
+                close - lagInFrame(toNullable(close)) OVER (
                     ORDER BY dt
                     ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING
                 ) AS delta
@@ -306,7 +308,7 @@ def refresh_cdm():
         changes AS (
             SELECT
                 dt,
-                close - lagInFrame(close) OVER (
+                close - lagInFrame(toNullable(close)) OVER (
                     ORDER BY dt
                     ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING
                 ) AS delta

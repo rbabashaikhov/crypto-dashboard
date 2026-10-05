@@ -69,6 +69,14 @@ check "cdm volume duplicate (symbol, open_time)" "$(ch "SELECT count() FROM (SEL
 check "cdm.bybit_latest_table rows" "$(ch "SELECT count() FROM cdm.bybit_latest_table")" "3"
 check "boxplot rows == raw logical" \
   "$(ch "SELECT (SELECT count() FROM cdm.bybit_boxplot_btc) + (SELECT count() FROM cdm.bybit_boxplot_eth) + (SELECT count() FROM cdm.bybit_boxplot_sol)")" "$logical2"
+for s in btc eth sol; do
+  sym="${s^^}USDT"
+  check "cdm.bybit_waterfall_$s rows == price days - 1" \
+    "$(ch "SELECT count() FROM cdm.bybit_waterfall_$s")" \
+    "$(ch "SELECT uniqExact(toDate(open_time)) - 1 FROM default.bybit_api FINAL WHERE symbol = '$sym'")"
+  check "cdm.bybit_waterfall_$s first step is after the first price day" \
+    "$(ch "SELECT min(toDate(step)) > (SELECT toDate(min(open_time)) FROM default.bybit_api FINAL WHERE symbol = '$sym') FROM cdm.bybit_waterfall_$s")" "1"
+done
 check "Volume Trend source: SUM(volume) cdm == raw FINAL" \
   "$(ch "SELECT round(sum(volume), 4) FROM cdm.bybit_volume_timeseries")" \
   "$(ch "SELECT round(sum(volume), 4) FROM default.bybit_api FINAL")"

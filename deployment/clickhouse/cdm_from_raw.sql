@@ -29,7 +29,7 @@ WITH daily AS (
     GROUP BY dt
 ),
 changes AS (
-    SELECT dt, close - lagInFrame(close) OVER (ORDER BY dt ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) AS delta
+    SELECT dt, close - lagInFrame(toNullable(close)) OVER (ORDER BY dt ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) AS delta
     FROM daily
 )
 SELECT toString(dt) AS step, delta FROM changes WHERE delta IS NOT NULL ORDER BY dt;
@@ -42,7 +42,7 @@ WITH daily AS (
     GROUP BY dt
 ),
 changes AS (
-    SELECT dt, close - lagInFrame(close) OVER (ORDER BY dt ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) AS delta
+    SELECT dt, close - lagInFrame(toNullable(close)) OVER (ORDER BY dt ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) AS delta
     FROM daily
 )
 SELECT toString(dt) AS step, delta FROM changes WHERE delta IS NOT NULL ORDER BY dt;
@@ -55,7 +55,7 @@ WITH daily AS (
     GROUP BY dt
 ),
 changes AS (
-    SELECT dt, close - lagInFrame(close) OVER (ORDER BY dt ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) AS delta
+    SELECT dt, close - lagInFrame(toNullable(close)) OVER (ORDER BY dt ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING) AS delta
     FROM daily
 )
 SELECT toString(dt) AS step, delta FROM changes WHERE delta IS NOT NULL ORDER BY dt;
