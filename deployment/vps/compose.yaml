@@ -1,7 +1,9 @@
 # Crypto Dashboard static demo: ClickHouse + Superset only (no Airflow).
 # Data is refreshed locally and restored here from a ClickHouse snapshot.
-# Nothing is published to the internet: ClickHouse has no host ports,
-# Superset listens on 127.0.0.1 only (use an SSH tunnel to view it).
+# ClickHouse has no host ports and stays on the project network only. Superset
+# listens on 127.0.0.1 (admin via SSH tunnel); the public embed reaches it only
+# through the shared Caddy edge on miniapps-net with a path allowlist
+# (bi.apps.leadmeter.ru, see deployment/README.md).
 name: crypto-dashboard
 
 services:
@@ -43,6 +45,9 @@ services:
       SERVER_THREADS_AMOUNT: "8"
       CLICKHOUSE_SUPERSET_PASSWORD: ${CLICKHOUSE_SUPERSET_PASSWORD}
       SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
+      GUEST_TOKEN_JWT_SECRET: ${GUEST_TOKEN_JWT_SECRET:?set GUEST_TOKEN_JWT_SECRET in .env}
+      EMBED_DASHBOARD_UUID: ${EMBED_DASHBOARD_UUID:-}
+      EMBED_ALLOWED_ORIGINS: ${EMBED_ALLOWED_ORIGINS}
     volumes:
       # Directory mounts (not single files) so rsync'd updates are visible without recreate
       - superset_home:/app/superset_home
@@ -50,6 +55,10 @@ services:
       - ../superset/dashboard_export:/app/bundle/dashboard_export:ro
     ports:
       - "127.0.0.1:${SUPERSET_LOCAL_PORT:-8088}:8088"
+    networks:
+      default:
+      miniapps-net:
+        aliases: [crypto-superset]
     mem_limit: 1g
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8088/health"]
@@ -57,6 +66,40 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # Issues guest tokens for the embedded BYBIT Dashboard only (token-service/server.py)
+  embed-token:
+    build: ./token-service
+    image: crypto-dashboard-embed-token:1
+    restart: unless-stopped
+    depends_on:
+      superset:
+        condition: service_healthy
+    environment:
+      SUPERSET_URL: http://superset:8088
+      SUPERSET_EMBED_SERVICE_USER: ${SUPERSET_EMBED_SERVICE_USER}
+      SUPERSET_EMBED_SERVICE_PASSWORD: ${SUPERSET_EMBED_SERVICE_PASSWORD}
+      EMBED_DASHBOARD_UUID: ${EMBED_DASHBOARD_UUID:-}  # printed by setup_embedding.py; server.py exits without it
+      EMBED_ALLOWED_ORIGINS: ${EMBED_ALLOWED_ORIGINS}
+    networks:
+      default:
+      miniapps-net:
+        aliases: [crypto-embed-token]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 64m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  # Shared with the miniapps-edge Caddy (/srv/miniapps/infrastructure); ClickHouse is not on it
+  miniapps-net:
+    external: true
 
 volumes:
   clickhouse_data:
