@@ -1,0 +1,55 @@
+# Reference copy of the site block in /srv/miniapps/infrastructure/Caddyfile (miniapps-edge).
+# The live file is not in this repo; keep both in sync.
+
+# Crypto Dashboard public embed (BYBIT Dashboard on leadmeter.ru). Only what the
+# Superset 4.1.4 embedded page uses is routed (verified by browser smoke); Superset admin
+# UI, login and every other path return 404. Admin stays on the VPS loopback (SSH tunnel).
+bi.apps.leadmeter.ru {
+	encode gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+		-Server
+		-X-Powered-By
+	}
+	log {
+		output stderr
+		format filter {
+			request>headers delete
+			resp_headers delete
+		}
+	}
+	@guest_token {
+		method GET OPTIONS
+		path /guest-token
+	}
+	handle @guest_token {
+		reverse_proxy crypto-embed-token:8080
+	}
+	@superset_read {
+		method GET
+		path /embedded/9266a24e-7c0b-459a-ae62-dc99e9c4f86f /static/* /api/v1/me/roles/ /api/v1/dashboard/1 /api/v1/dashboard/1/charts /api/v1/dashboard/1/datasets /api/v1/time_range/
+	}
+	@superset_chart_data {
+		method POST
+		path /api/v1/chart/data
+	}
+	handle @superset_read {
+		reverse_proxy crypto-superset:8088
+	}
+	handle @superset_chart_data {
+		reverse_proxy crypto-superset:8088
+	}
+	# Frontend event log: guests may not write it; answer at the edge to keep the console clean
+	@frontend_log {
+		method POST
+		path /superset/log/
+	}
+	handle @frontend_log {
+		respond 204
+	}
+	handle {
+		respond 404
+	}
+}

@@ -20,6 +20,7 @@ Exit code 1 if anything fails.
 import copy
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -106,14 +107,16 @@ with app.app_context():
 
     r = s.get(f"{SUPERSET}/api/v1/me/roles/", timeout=30)
     check(r.ok and list(r.json()["result"]["roles"]) == [spec.GUEST_ROLE], f"/api/v1/me/roles/: {r.status_code} {r.json().get('result', {}).get('roles', {}).keys() if r.ok else ''}")
-    for path in (f"/api/v1/dashboard/{dash.id}", f"/api/v1/dashboard/{dash.id}/charts", f"/api/v1/dashboard/{dash.id}/datasets", "/api/v1/security/csrf_token/"):
+    for path in (f"/api/v1/dashboard/{dash.id}", f"/api/v1/dashboard/{dash.id}/charts", f"/api/v1/dashboard/{dash.id}/datasets"):
         check(status("GET", path) == 200, f"GET {path}")
     r = s.get(f"{SUPERSET}/api/v1/time_range/", params={"q": "'Last month'"}, timeout=30)  # rison string, as the frontend sends it
     check(r.status_code == 200, f"GET /api/v1/time_range/ (Period filter): {r.status_code}")
-    csrf = s.get(f"{SUPERSET}/api/v1/security/csrf_token/", timeout=30).json()["result"]
-    s.headers.update({"X-CSRFToken": csrf, "Referer": SUPERSET})  # so refused writes are refused by authz, not CSRF
-    r = s.post(f"{SUPERSET}/api/v1/dashboard/{dash.id}/filter_state", json={"value": "{}"}, timeout=30)
-    check(r.status_code == 201, f"POST filter_state (native filter state): {r.status_code}")
+    # The embedded page carries a CSRF token (like the frontend uses); send it so refused
+    # writes below are refused by authorization, not by the CSRF check
+    page = requests.get(f"{SUPERSET}/embedded/{embed_uuid}", headers={"Referer": origins[0] + "/"}, timeout=30)
+    csrf = re.search(r'id="csrf_token"[^>]*value="([^"]+)"', page.text) or re.search(r'value="([^"]+)"[^>]*id="csrf_token"', page.text)
+    s.cookies.update(page.cookies)
+    s.headers.update({"X-CSRFToken": csrf.group(1) if csrf else "", "Referer": SUPERSET})
 
     def chart_data(slc, time_range=None, symbols=None, tamper=None):
         # The dashboard frontend sends slice_id and dashboardId; the guest check needs both
@@ -205,6 +208,8 @@ with app.app_context():
         ("GET", "/api/v1/dataset/"), ("GET", "/api/v1/dataset/1"), ("GET", "/api/v1/query/"),
         ("GET", "/api/v1/saved_query/"), ("POST", "/api/v1/sqllab/execute/"), ("GET", "/api/v1/sqllab/"),
         ("POST", "/api/v1/security/guest_token/"), ("GET", "/api/v1/security/roles/"), ("GET", "/api/v1/log/"),
+        ("GET", "/api/v1/security/csrf_token/"), ("POST", f"/api/v1/dashboard/{dash.id}/filter_state"),
+        ("POST", f"/api/v1/dashboard/{dash.id}/permalink"), ("POST", "/superset/log/"),
         ("GET", f"/api/v1/dashboard/{dash.id}/export/"), ("PUT", f"/api/v1/dashboard/{dash.id}"),
         ("GET", "/api/v1/explore/"), ("GET", "/superset/sqllab/"), ("GET", "/sqllab/"),
         ("GET", f"/explore/?slice_id={charts['Price trend'].id}"), ("GET", f"/superset/dashboard/{dash.id}/"),
