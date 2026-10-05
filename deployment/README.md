@@ -106,9 +106,12 @@ one from `CLICKHOUSE_SUPERSET_PASSWORD`.
   Last day table is excluded.
 
 Re-imports update objects in place by uuid; no duplicates are created.
-`verify_dashboard.py` checks filters (Symbol -> Price/Volume trend; Period -> those plus
-the three waterfalls, never Last day table; no defaults), Period with "Last month" and a
-custom range, Symbol, the waterfall config, and duplicates.
+`verify_dashboard.py` checks the exact filter targets (Symbol -> Price/Volume trend only,
+waterfalls and Last day table excluded; Period -> Price/Volume trend and the three
+waterfalls, Last day table excluded), Period's fixed saved default
+(2026-09-05 00:00 <= time < 2026-10-05 00:00), Period applied the way the 4.1.4 frontend
+sends it (`query.time_range`) for the default, "Last month" and a custom range, Symbol,
+the waterfall config, and duplicates.
 
 Waterfall charts use the temporal calculated column `step_date`
 (`parseDateTime64BestEffort(step)`) as x-axis **without a time grain**: Superset 4.1.4's

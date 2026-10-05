@@ -2,16 +2,17 @@
 
 - dashboard, charts and datasets exist and every dataset resolves to a ClickHouse table
 - every chart's saved query runs without error and returns rows
-- native filters apply to exactly the expected charts:
-    Symbol -> Price trend, Volume trend
-    Period -> Price trend, Volume trend, BTC/ETH/SOL Waterfall (not Last day table)
-  and no filter has a default value
+- native filters apply to exactly the expected charts and exclude the rest:
+    Symbol -> Price trend, Volume trend (excluded: Last day table, BTC/ETH/SOL Waterfall)
+    Period -> Price trend, Volume trend, BTC/ETH/SOL Waterfall (excluded: Last day table)
+- Period has the fixed saved default PERIOD_DEFAULT, Symbol has no default
 - Symbol narrows its charts to the chosen symbol
-- Period ("Last month" and a custom range) limits every chart in scope to that
-  range, and Last day table is unaffected
+- Period (saved default, "Last month", a custom range) limits every chart in scope
+  to that range, and Last day table is unaffected
 
-Native filter values are applied the way the dashboard frontend sends them:
-time_range replaces the TEMPORAL_RANGE filter value, a select adds an IN filter.
+Native filter values are applied the way the Superset 4.1.4 dashboard frontend
+sends them: a time filter sets extra_form_data.time_range and query.time_range
+(the chart's own TEMPORAL_RANGE filter stays "No filter"); a select adds an IN filter.
 
 Run: docker compose exec superset python /app/deploy/verify_dashboard.py
 Exit code 1 if anything fails.
@@ -26,10 +27,18 @@ import pandas as pd
 from superset.app import create_app
 
 DASHBOARD_UUID = "63182cb4-866e-4ac4-8eca-5d283e827b9f"
+WATERFALLS = {"BTC Waterfall", "ETH Waterfall", "SOL Waterfall"}
 EXPECTED_SCOPE = {
     "Symbol": {"Price trend", "Volume trend"},
-    "Period": {"Price trend", "Volume trend", "BTC Waterfall", "ETH Waterfall", "SOL Waterfall"},
+    "Period": {"Price trend", "Volume trend"} | WATERFALLS,
 }
+EXPECTED_EXCLUDED = {
+    "Symbol": {"Last day table"} | WATERFALLS,
+    "Period": {"Last day table"},
+}
+# Fixed default saved in the dashboard: 2026-09-05 00:00 <= time < 2026-10-05 00:00
+PERIOD_DEFAULT = 'DATEADD(DATETIME("2026-10-05T00:00:00"), -1, month) : 2026-10-05T00:00:00'
+EXPECTED_DEFAULT = {"Symbol": None, "Period": PERIOD_DEFAULT}
 CUSTOM_RANGE = "2026-05-01T00:00:00 : 2026-05-22T00:00:00"
 
 app = create_app()
@@ -51,12 +60,10 @@ with app.app_context():
         qc = copy.deepcopy(json.loads(slc.query_context))
         qc["force"] = True
         if time_range:
-            qc["form_data"]["time_range"] = time_range
+            qc["form_data"]["extra_form_data"] = {"time_range": time_range}
         for q in qc["queries"]:
             if time_range:
-                for f in q["filters"]:
-                    if f["op"] == "TEMPORAL_RANGE":
-                        f["val"] = time_range
+                q["time_range"] = time_range
             if symbols:
                 q["filters"].append({"col": "symbol", "op": "IN", "val": symbols})
         command = ChartDataCommand(ChartDataQueryContextSchema().load(qc))
@@ -124,12 +131,17 @@ with app.app_context():
                 fail(f"native filter {name!r} missing")
                 continue
             applied = {names.get(i, f"<missing chart {i}>") for i in flt.get("chartsInScope", [])}
-            default = flt.get("defaultDataMask", {}).get("filterState", {}).get("value")
-            print(f"filter {name!r} ({flt['filterType']}): applied={sorted(applied)} default={default!r}")
+            excluded = {names.get(i, f"<missing chart {i}>") for i in flt.get("scope", {}).get("excluded", [])}
+            mask = flt.get("defaultDataMask", {})
+            default = mask.get("filterState", {}).get("value")
+            default_sent = mask.get("extraFormData", {}).get("time_range")
+            print(f"filter {name!r} ({flt['filterType']}): applied={sorted(applied)} excluded={sorted(excluded)} default={default!r}")
             if applied != expected:
                 fail(f"filter {name!r} applies to {sorted(applied)}, expected {sorted(expected)}")
-            if default:
-                fail(f"filter {name!r} has default value {default!r}")
+            if excluded != EXPECTED_EXCLUDED[name]:
+                fail(f"filter {name!r} excludes {sorted(excluded)}, expected {sorted(EXPECTED_EXCLUDED[name])}")
+            if default != EXPECTED_DEFAULT[name] or (flt["filterType"] == "filter_time" and default_sent != EXPECTED_DEFAULT[name]):
+                fail(f"filter {name!r} default {default!r} / extraFormData {default_sent!r}, expected {EXPECTED_DEFAULT[name]!r}")
 
         # 1. No filters: every chart runs
         baseline = {}
@@ -146,8 +158,8 @@ with app.app_context():
             if q.get("error") or not q["rowcount"]:
                 fail(f"chart {name}: {q.get('error') or 'no rows'}")
 
-        # 2. Period: Last month and a custom range
-        for time_range in ("Last month", CUSTOM_RANGE):
+        # 2. Period: the saved default (what the dashboard opens with), Last month, a custom range
+        for time_range in (PERIOD_DEFAULT, "Last month", CUSTOM_RANGE):
             since, until = get_since_until(time_range=time_range)
             print(f"period {time_range!r} -> [{since}, {until})")
             for name in sorted(EXPECTED_SCOPE["Period"]):

@@ -189,9 +189,9 @@ metadata:
   color_scheme: ''
   label_colors: {}
   shared_label_colors:
-  - BTCUSDT
-  - ETHUSDT
   - SOLUSDT
+  - ETHUSDT
+  - BTCUSDT
   color_scheme_domain: []
   cross_filters_enabled: true
   default_filters: '{}'
@@ -219,6 +219,9 @@ metadata:
       - ROOT_ID
       excluded:
       - 396
+      - 397
+      - 398
+      - 399
     type: NATIVE_FILTER
     description: ''
     chartsInScope:
@@ -233,9 +236,10 @@ metadata:
     targets:
     - {}
     defaultDataMask:
-      extraFormData: {}
-      filterState: {}
-      ownState: {}
+      extraFormData:
+        time_range: 'DATEADD(DATETIME("2026-10-05T00:00:00"), -1, month) : 2026-10-05T00:00:00'
+      filterState:
+        value: 'DATEADD(DATETIME("2026-10-05T00:00:00"), -1, month) : 2026-10-05T00:00:00'
     cascadeParentIds: []
     scope:
       rootPath:
