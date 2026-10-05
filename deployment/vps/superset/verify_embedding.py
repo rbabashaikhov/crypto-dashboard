@@ -6,7 +6,8 @@
   account has only EmbedTokenIssuer, the embedded config allows exactly the origins
 - embed-token: token for allowed origins only, scoped to the embedded dashboard, no RLS, 300 s
 - with a guest token: the dashboard, its charts and filters (Period, Symbol) work over HTTP;
-  lists, database/dataset/SQL Lab/Explore/query APIs and changed chart payloads are refused;
+  lists, database/dataset/SQL Lab/Explore/query APIs and changed chart or filter payloads
+  (extra columns, ad-hoc SQL, samples) are refused;
   forged, expired and wrong-audience tokens are rejected
 - the service account cannot get a token for anything else (dashboard id, dashboard uuid,
   unknown uuid, extra resource, RLS) and cannot read Superset objects
@@ -107,22 +108,24 @@ with app.app_context():
     check(r.ok and list(r.json()["result"]["roles"]) == [spec.GUEST_ROLE], f"/api/v1/me/roles/: {r.status_code} {r.json().get('result', {}).get('roles', {}).keys() if r.ok else ''}")
     for path in (f"/api/v1/dashboard/{dash.id}", f"/api/v1/dashboard/{dash.id}/charts", f"/api/v1/dashboard/{dash.id}/datasets", "/api/v1/security/csrf_token/"):
         check(status("GET", path) == 200, f"GET {path}")
-    r = s.get(f"{SUPERSET}/api/v1/time_range/", params={"q": "(timeRange:'Last month')"}, timeout=30)
+    r = s.get(f"{SUPERSET}/api/v1/time_range/", params={"q": "'Last month'"}, timeout=30)  # rison string, as the frontend sends it
     check(r.status_code == 200, f"GET /api/v1/time_range/ (Period filter): {r.status_code}")
     csrf = s.get(f"{SUPERSET}/api/v1/security/csrf_token/", timeout=30).json()["result"]
-    r = s.post(f"{SUPERSET}/api/v1/dashboard/{dash.id}/filter_state", json={"value": "{}"}, headers={"X-CSRFToken": csrf, "Referer": SUPERSET}, timeout=30)
+    s.headers.update({"X-CSRFToken": csrf, "Referer": SUPERSET})  # so refused writes are refused by authz, not CSRF
+    r = s.post(f"{SUPERSET}/api/v1/dashboard/{dash.id}/filter_state", json={"value": "{}"}, timeout=30)
     check(r.status_code == 201, f"POST filter_state (native filter state): {r.status_code}")
 
-    def chart_data(slc, time_range=None, symbols=None, metrics=None):
+    def chart_data(slc, time_range=None, symbols=None, tamper=None):
+        # The dashboard frontend sends slice_id and dashboardId; the guest check needs both
         qc = copy.deepcopy(json.loads(slc.query_context))
-        qc["form_data"]["dashboardId"] = dash.id
+        qc["form_data"].update(slice_id=slc.id, dashboardId=dash.id)
         for q in qc["queries"]:
             if time_range:
                 q["time_range"] = time_range
             if symbols:
                 q["filters"].append({"col": "symbol", "op": "IN", "val": symbols})
-            if metrics is not None:
-                q["metrics"] = metrics
+        if tamper:
+            tamper(qc)
         return s.post(f"{SUPERSET}/api/v1/chart/data", json=qc, timeout=60)
 
     charts = {x.slice_name: x for x in dash.slices}
@@ -135,8 +138,62 @@ with app.app_context():
     r = chart_data(charts["Price trend"], symbols=["BTCUSDT"])
     series = [x for x in r.json()["result"][0]["colnames"] if x not in ("open_time", "__timestamp")] if r.ok else None
     check(r.ok and series == ["BTCUSDT"], f"Symbol=BTCUSDT on 'Price trend': {r.status_code} series={series}")
-    r = chart_data(charts["Price trend"], metrics=["count"])
-    check(r.status_code in DENIED, f"changed chart payload (metrics) refused: {r.status_code}")
+    # Changed payloads: Superset 4.1.4 alone lets these through for guests (embed_security.py)
+    def q0(fn):
+        return lambda qc: fn(qc["queries"][0])
+
+    price = charts["Price trend"]
+    waterfall_ds = charts["BTC Waterfall"].datasource
+    for label, tamper in (
+        ("extra column", q0(lambda q: q["columns"].append("loaded_at"))),
+        ("ad-hoc SQL metric under the saved label", q0(lambda q: q.update(metrics=[
+            {"expressionType": "SQL", "sqlExpression": "max(high)", "label": "AVG(close)"}]))),
+        ("ad-hoc SQL column", q0(lambda q: q["columns"].append(
+            {"expressionType": "SQL", "sqlExpression": "version()", "label": "v"}))),
+        ("extras.where SQL", q0(lambda q: q["extras"].update(where="1 = 1"))),
+        ("filter on a SQL expression", q0(lambda q: q["filters"].append(
+            {"col": {"sqlExpression": "currentUser()", "label": "u"}, "op": "IS NOT NULL"}))),
+        ("result_type samples", lambda qc: qc.update(result_type="samples")),
+        ("no slice_id", lambda qc: qc["form_data"].pop("slice_id")),
+        ("another chart's dataset", lambda qc: qc.update(datasource={"id": waterfall_ds.id, "type": "table"})),
+    ):
+        r = chart_data(price, tamper=tamper)
+        check(r.status_code in DENIED, f"guest chart/data with {label} refused: {r.status_code}")
+
+    # Symbol filter options: a NATIVE_FILTER query on the filter's target dataset
+    symbol = next(f for f in json.loads(dash.json_metadata)["native_filter_configuration"] if f["name"] == "Symbol")
+    target = symbol["targets"][0]
+    col = target["column"]["name"]
+
+    def filter_options(**query):
+        return s.post(f"{SUPERSET}/api/v1/chart/data", timeout=60, json={
+            "datasource": {"id": target["datasetId"], "type": "table"},
+            "form_data": {"type": "NATIVE_FILTER", "native_filter_id": symbol["id"], "dashboardId": dash.id,
+                          "datasource": f"{target['datasetId']}__table", "viz_type": "filter_select", "groupby": [col]},
+            "queries": [{"columns": [col], "metrics": [], "filters": [], "orderby": [[col, True]], "row_limit": 1000,
+                         "time_range": "No filter", "extras": {"where": "", "having": ""}, **query}],
+            "result_format": "json", "result_type": "full",
+        })
+
+    r = filter_options()
+    options = sorted(row[col] for row in r.json()["result"][0]["data"]) if r.ok else None
+    check(r.ok and options == ["BTCUSDT", "ETHUSDT", "SOLUSDT"], f"Symbol filter options: {r.status_code} {options}")
+    r = filter_options(filters=[{"col": col, "op": "ILIKE", "val": "%BTC%"}])
+    check(r.ok and [row[col] for row in r.json()["result"][0]["data"]] == ["BTCUSDT"], f"Symbol filter search: {r.status_code}")
+    for label, query in (
+        ("another column", {"columns": ["close"]}),
+        ("a metric", {"metrics": [{"expressionType": "SQL", "sqlExpression": "max(close)", "label": "m"}]}),
+        ("an ad-hoc SQL column", {"columns": [{"expressionType": "SQL", "sqlExpression": "hostName()", "label": "symbol"}]}),
+        ("extras.where SQL", {"extras": {"where": "1 = 1"}}),
+    ):
+        r = filter_options(**query)
+        check(r.status_code in DENIED, f"Symbol filter query with {label} refused: {r.status_code}")
+    r = s.post(f"{SUPERSET}/api/v1/chart/data", timeout=60, json={
+        "datasource": {"id": target["datasetId"], "type": "table"},
+        "form_data": {"type": "NATIVE_FILTER", "native_filter_id": "NATIVE_FILTER-unknown", "dashboardId": dash.id},
+        "queries": [{"columns": ["symbol"], "metrics": [], "row_limit": 10}], "result_format": "json", "result_type": "full",
+    })
+    check(r.status_code in DENIED, f"query for an unknown native filter refused: {r.status_code}")
 
     r = s.get(f"{SUPERSET}/api/v1/dashboard/", timeout=30)
     listed = [d["id"] for d in r.json().get("result", [])] if r.ok else []
@@ -151,10 +208,14 @@ with app.app_context():
         ("GET", f"/api/v1/dashboard/{dash.id}/export/"), ("PUT", f"/api/v1/dashboard/{dash.id}"),
         ("GET", "/api/v1/explore/"), ("GET", "/superset/sqllab/"), ("GET", "/sqllab/"),
         ("GET", f"/explore/?slice_id={charts['Price trend'].id}"), ("GET", f"/superset/dashboard/{dash.id}/"),
-        ("GET", "/dashboard/list/"), ("GET", "/users/list/"),
+        ("GET", "/users/list/"), ("GET", "/databaseview/list/"), ("GET", "/tablemodelview/list/"),
     ):
         code = status(method, path, json={} if method != "GET" else None)
         check(code in DENIED or code == 302, f"guest {method} {path}: {code}")
+    # Superset itself serves these SPA shells to a guest (can_read on Dashboard/Chart); their data
+    # APIs show only BYBIT (above). The public host does not route them (Caddy allowlist).
+    for path in ("/dashboard/list/", "/chart/list/"):
+        print(f"  INFO guest GET {path}: {status('GET', path)} (edge-only: not routed by Caddy)")
 
     def forged(**over):
         now = int(time.time())

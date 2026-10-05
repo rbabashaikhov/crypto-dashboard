@@ -1,4 +1,5 @@
 import os
+import sys
 
 # Single-process demo: SQLite metadata in the superset_home volume, no Redis, no Celery.
 SECRET_KEY = os.environ["SUPERSET_SECRET_KEY"]
@@ -44,6 +45,13 @@ def _only_embedded_bybit_dashboard(body):
 
 
 GUEST_TOKEN_VALIDATOR_HOOK = _only_embedded_bybit_dashboard
+
+# Guests may only run the dashboard's saved chart queries and its filters' option
+# queries; Superset 4.1.4's own payload check misses this (see embed_security.py).
+sys.path.insert(0, os.path.dirname(__file__))
+from embed_security import EmbedSecurityManager  # noqa: E402
+
+CUSTOM_SECURITY_MANAGER = EmbedSecurityManager
 
 # Behind Caddy (X-Forwarded-Proto/Host) for the public host
 ENABLE_PROXY_FIX = True
