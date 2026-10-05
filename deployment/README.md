@@ -36,9 +36,11 @@ parsing or timezone conversion, files are small, and `INSERT ... FORMAT Native`
 loads them into a clean server. `manifest.tsv` records row counts per table and
 symbol plus the latest `open_time` / `loaded_at`, and the restore step diffs against it.
 
-The snapshot is deduplicated at export time (see Known issues): raw keeps one row per
-`(symbol, interval, open_time)` with the latest `loaded_at`, and CDM is rebuilt from
-that raw inside an isolated `clickhouse local`. The local ClickHouse is only read.
+The snapshot is deduplicated at export time: raw keeps one row per
+`(exchange, category, symbol, interval, open_time)` with the latest `loaded_at`, and CDM
+is rebuilt from that raw inside an isolated `clickhouse local`. The local ClickHouse is
+only read. Since raw became a `ReplacingMergeTree` this is a no-op for new data, but it
+also keeps exports correct from a raw table that has not been migrated yet.
 
 Snapshot files are generated artifacts and are git-ignored.
 
@@ -95,17 +97,16 @@ one from `CLICKHOUSE_SUPERSET_PASSWORD`.
 Superset 4.1 remaps filter targets and `scope.excluded` to the new chart ids but keeps
 the source ids in `chartsInScope`, which would detach the Symbol filter from its charts.
 
-## Known issues (not fixed in this stage)
+## Known issues
 
-- **Duplicate raw rows.** Each DAG run appends the latest 200 hourly candles without
-  deleting overlapping ones, so `default.bybit_api` and the CDM tables repeat rows
-  (locally ~2.7 rows per key on 2026-10-05). *Volume trend* uses `SUM(volume)`, so
-  local volumes are inflated. The VPS snapshot is deduplicated; the DAG is unchanged.
-- **Gap in history.** The DAG loads only the last 200 candles (~8 days), so the series
-  has no data between 2026-04-24 and 2026-09-27.
+- **Gap in history.** Ingestion is a rolling refresh of the last 200 candles (~8 days);
+  historical backfill is not implemented, so the series has no data between 2026-04-24
+  and 2026-09-27.
 - **Time zones.** `open_time` is UTC (from Bybit), `loaded_at` is UTC+3.
-- **Local Airflow image lacks `clickhouse-driver`.** On 2026-10-05 it was installed into
-  the running containers with pip and will be lost when they are recreated; add it to
-  `_PIP_ADDITIONAL_REQUIREMENTS` or a custom image.
+- **VPS raw table engine.** The VPS ClickHouse was created before raw became a
+  `ReplacingMergeTree` and still has the old `MergeTree` raw table. Its data is the
+  deduplicated snapshot and the dashboard reads only CDM, so it is correct; restoring a
+  snapshot keeps it that way. Apply `sql/migrations/001_bybit_api_replacing_merge_tree.sql`
+  there when convenient.
 - `cdm.bybit_boxplot_daily` exists in the local ClickHouse but is not created or
   refreshed by this repository; the dashboard does not use it.

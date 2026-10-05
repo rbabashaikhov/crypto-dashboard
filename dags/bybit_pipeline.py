@@ -175,6 +175,8 @@ def load_symbol(symbol):
 # TRANSFORM (CDM)
 # =========================================================
 def refresh_cdm():
+    # Raw is a ReplacingMergeTree: overlapping ingests leave several versions of a
+    # candle until a background merge. FINAL reads only the latest version.
     client = get_clickhouse_client()
 
     # -----------------------------
@@ -188,7 +190,7 @@ def refresh_cdm():
             open_time,
             close,
             loaded_at
-        FROM default.bybit_api
+        FROM default.bybit_api FINAL
     """)
 
     # -----------------------------
@@ -203,7 +205,7 @@ def refresh_cdm():
             volume,
             turnover,
             loaded_at
-        FROM default.bybit_api
+        FROM default.bybit_api FINAL
     """)
 
     # -----------------------------
@@ -219,7 +221,7 @@ def refresh_cdm():
             argMax(volume, open_time) AS last_volume,
             argMax(turnover, open_time) AS last_turnover,
             max(loaded_at) AS loaded_at
-        FROM default.bybit_api
+        FROM default.bybit_api FINAL
         GROUP BY symbol
     """)
 
@@ -233,7 +235,7 @@ def refresh_cdm():
             SELECT
                 toDate(open_time) AS dt,
                 avg(close) AS close
-            FROM default.bybit_api
+            FROM default.bybit_api FINAL
             WHERE symbol = 'BTCUSDT'
             GROUP BY dt
         ),
@@ -264,7 +266,7 @@ def refresh_cdm():
             SELECT
                 toDate(open_time) AS dt,
                 avg(close) AS close
-            FROM default.bybit_api
+            FROM default.bybit_api FINAL
             WHERE symbol = 'ETHUSDT'
             GROUP BY dt
         ),
@@ -295,7 +297,7 @@ def refresh_cdm():
             SELECT
                 toDate(open_time) AS dt,
                 avg(close) AS close
-            FROM default.bybit_api
+            FROM default.bybit_api FINAL
             WHERE symbol = 'SOLUSDT'
             GROUP BY dt
         ),
@@ -326,7 +328,7 @@ def refresh_cdm():
             open_time,
             (close - open) / nullIf(open, 0) AS return,
             (high - low) / nullIf(close, 0) AS candle_volatility
-        FROM default.bybit_api
+        FROM default.bybit_api FINAL
         WHERE symbol = 'BTCUSDT'
         ORDER BY open_time
     """)
@@ -341,7 +343,7 @@ def refresh_cdm():
             open_time,
             (close - open) / nullIf(open, 0) AS return,
             (high - low) / nullIf(close, 0) AS candle_volatility
-        FROM default.bybit_api
+        FROM default.bybit_api FINAL
         WHERE symbol = 'ETHUSDT'
         ORDER BY open_time
     """)
@@ -356,7 +358,7 @@ def refresh_cdm():
             open_time,
             (close - open) / nullIf(open, 0) AS return,
             (high - low) / nullIf(close, 0) AS candle_volatility
-        FROM default.bybit_api
+        FROM default.bybit_api FINAL
         WHERE symbol = 'SOLUSDT'
         ORDER BY open_time
     """)

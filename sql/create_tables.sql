@@ -15,8 +15,12 @@ CREATE TABLE IF NOT EXISTS default.bybit_api
     turnover Float64,
     loaded_at DateTime DEFAULT now()
 )
-ENGINE = MergeTree
-ORDER BY (symbol, interval, open_time);
+-- One logical candle per (exchange, category, symbol, interval, open_time).
+-- Re-ingesting an overlapping window adds a newer version; the row with the
+-- latest loaded_at wins (e.g. the still-open candle's updated volume).
+-- Merges are eventual, so readers must use FINAL.
+ENGINE = ReplacingMergeTree(loaded_at)
+ORDER BY (exchange, category, symbol, interval, open_time);
 
 CREATE TABLE IF NOT EXISTS cdm.bybit_price_timeseries
 (

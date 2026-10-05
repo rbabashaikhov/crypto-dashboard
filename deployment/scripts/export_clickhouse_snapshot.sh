@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Exports a deduplicated Crypto Dashboard snapshot from the local ClickHouse.
 #
-# - raw: default.bybit_api, one row per (symbol, interval, open_time), latest loaded_at wins
+# - raw: default.bybit_api, one row per (exchange, category, symbol, interval, open_time),
+#        latest loaded_at wins (also correct for a pre-migration MergeTree raw table)
 # - cdm: rebuilt from the deduplicated raw with deployment/clickhouse/cdm_from_raw.sql
 #        inside an isolated `clickhouse local` (the local server is only read)
 # - format: ClickHouse Native, plus manifest.tsv with expected counts for restore validation
@@ -39,7 +40,7 @@ docker exec "$CH_CONTAINER" clickhouse-client --user "$CH_USER" --password "$CH_
   SELECT exchange, category, symbol, interval, open_time, open, high, low, close, volume, turnover, loaded_at
   FROM default.bybit_api
   ORDER BY loaded_at DESC
-  LIMIT 1 BY symbol, interval, open_time
+  LIMIT 1 BY exchange, category, symbol, interval, open_time
   FORMAT Native" > "$OUT_DIR/default.bybit_api.native"
 docker cp "$OUT_DIR/default.bybit_api.native" "$CH_CONTAINER:$WORK/raw.native"
 
