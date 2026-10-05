@@ -15,11 +15,11 @@ position:
       height: 50
       sliceName: Price trend
       uuid: 439d051f-6560-4a0c-bb6d-85ae34b0c7fa
-      width: 6
+      width: 4
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-ueHP3TMn0TqYi4a8ELWsW
+    - ROW-bLEMUJx9Jo9UOlaEZHdDr
     type: CHART
   CHART-explore-395-1:
     children: []
@@ -29,7 +29,7 @@ position:
       height: 50
       sliceName: Volume trend
       uuid: 99f5f46e-7972-435c-b8a6-5493e015b9f6
-      width: 6
+      width: 4
     parents:
     - ROOT_ID
     - GRID_ID
@@ -43,11 +43,11 @@ position:
       height: 50
       sliceName: Last day table
       uuid: c2c20fc9-9b3d-4935-ad93-0187d7d25217
-      width: 6
+      width: 4
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-qmmw5u3rP-LScFPoX5FMe
+    - ROW-ueHP3TMn0TqYi4a8ELWsW
     type: CHART
   CHART-explore-397-1:
     children: []
@@ -57,11 +57,11 @@ position:
       height: 50
       sliceName: BTC Waterfall
       uuid: 44c3444d-00b8-46b3-94ff-b0508a13f42e
-      width: 6
+      width: 4
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-Tryb67vTD7iBSjGspsMQP
+    - ROW-ueHP3TMn0TqYi4a8ELWsW
     type: CHART
   CHART-explore-398-1:
     children: []
@@ -71,7 +71,7 @@ position:
       height: 50
       sliceName: ETH Waterfall
       uuid: 56ab8b42-84b4-41ea-a05d-a0da12ce8921
-      width: 6
+      width: 4
     parents:
     - ROOT_ID
     - GRID_ID
@@ -85,18 +85,17 @@ position:
       height: 50
       sliceName: SOL Waterfall
       uuid: 6162913a-689b-44ef-bde2-d3f7a182737d
-      width: 6
+      width: 4
     parents:
     - ROOT_ID
     - GRID_ID
-    - ROW-yaoZJ9AZuYtFUh2xu2z9y
+    - ROW-b2xqT_ykFhGOEwPf3PyMY
     type: CHART
   DASHBOARD_VERSION_KEY: v2
   GRID_ID:
     children:
     - ROW-ueHP3TMn0TqYi4a8ELWsW
-    - ROW-bLEMUJx9Jo9UOlaEZHdDr
-    - ROW-b2xqT_ykFhGOEwPf3PyMY
+    - ROW-jx1NGF1pQssb51bmwKU_3
     id: GRID_ID
     parents:
     - ROOT_ID
@@ -111,25 +110,13 @@ position:
     - GRID_ID
     id: ROOT_ID
     type: ROOT
-  ROW-b2xqT_ykFhGOEwPf3PyMY:
+  ROW-jx1NGF1pQssb51bmwKU_3:
     children:
+    - CHART-explore-397-1
     - CHART-explore-398-1
     - CHART-explore-399-1
-    id: ROW-b2xqT_ykFhGOEwPf3PyMY
+    id: ROW-jx1NGF1pQssb51bmwKU_3
     meta:
-      '0': ROOT_ID
-      background: BACKGROUND_TRANSPARENT
-    parents:
-    - ROOT_ID
-    - GRID_ID
-    type: ROW
-  ROW-bLEMUJx9Jo9UOlaEZHdDr:
-    children:
-    - CHART-explore-394-1
-    - CHART-explore-395-1
-    id: ROW-bLEMUJx9Jo9UOlaEZHdDr
-    meta:
-      '0': ROOT_ID
       background: BACKGROUND_TRANSPARENT
     parents:
     - ROOT_ID
@@ -138,7 +125,8 @@ position:
   ROW-ueHP3TMn0TqYi4a8ELWsW:
     children:
     - CHART-explore-396-1
-    - CHART-explore-397-1
+    - CHART-explore-394-1
+    - CHART-explore-395-1
     id: ROW-ueHP3TMn0TqYi4a8ELWsW
     meta:
       '0': ROOT_ID
@@ -231,13 +219,36 @@ metadata:
       - ROOT_ID
       excluded:
       - 396
-      - 397
-      - 398
-      - 399
     type: NATIVE_FILTER
     description: ''
     chartsInScope:
     - 394
     - 395
+    tabsInScope: []
+  - id: NATIVE_FILTER-UGLAdFA920AcVCaZwfPZc
+    controlValues:
+      enableEmptyFilter: false
+    name: Period
+    filterType: filter_time
+    targets:
+    - {}
+    defaultDataMask:
+      extraFormData: {}
+      filterState: {}
+      ownState: {}
+    cascadeParentIds: []
+    scope:
+      rootPath:
+      - ROOT_ID
+      excluded:
+      - 396
+    type: NATIVE_FILTER
+    description: ''
+    chartsInScope:
+    - 394
+    - 395
+    - 397
+    - 398
+    - 399
     tabsInScope: []
 version: 1.0.0

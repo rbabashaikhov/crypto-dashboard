@@ -93,9 +93,27 @@ into `superset/dashboard_export/` and point the database URI host at `clickhouse
 Superset masks the password as `XXXXXXXXXX`; `import_dashboard.py` supplies the real
 one from `CLICKHOUSE_SUPERSET_PASSWORD`.
 
-`import_dashboard.py` also rewrites native filter `chartsInScope` after import:
-Superset 4.1 remaps filter targets and `scope.excluded` to the new chart ids but keeps
-the source ids in `chartsInScope`, which would detach the Symbol filter from its charts.
+`import_dashboard.py` works around two Superset 4.1 import gaps:
+
+- `ImportDashboardsCommand` imports datasets and charts with a hard-coded
+  `overwrite=False`, so existing ones keep their old config. The script first runs
+  `ImportDatasetsCommand` and `ImportChartsCommand` with `overwrite=True` (databases are
+  never overwritten, the server's ClickHouse password stays), then the dashboard.
+- Native filter `chartsInScope` keeps the source instance's chart ids. The script restores
+  the exported applied/excluded chart lists exactly via the export layout
+  (source chart id -> chart uuid -> local id); it does not derive them from
+  `scope.excluded`, because Symbol applies only to Price/Volume trend even though only
+  Last day table is excluded.
+
+Re-imports update objects in place by uuid; no duplicates are created.
+`verify_dashboard.py` checks filters (Symbol -> Price/Volume trend; Period -> those plus
+the three waterfalls, never Last day table; no defaults), Period with "Last month" and a
+custom range, Symbol, the waterfall config, and duplicates.
+
+Waterfall charts use the temporal calculated column `step_date`
+(`parseDateTime64BestEffort(step)`) as x-axis **without a time grain**: Superset 4.1.4's
+waterfall orders by the raw x-axis, so with a grain ClickHouse rejects the query
+(`NOT_AN_AGGREGATE`). The waterfall tables already hold one row per day.
 
 ## Known issues
 

@@ -7,8 +7,7 @@ params:
   datasource: 30__table
   viz_type: waterfall
   slice_id: 397
-  x_axis: step
-  time_grain_sqla: P1D
+  x_axis: step_date
   groupby: []
   metric:
     aggregate: SUM
@@ -35,9 +34,14 @@ params:
     label: SUM(delta)
     optionName: metric_m6kqq925pw_92ynviplu8o
     sqlExpression: null
-  adhoc_filters: []
+  adhoc_filters:
+  - clause: WHERE
+    subject: step_date
+    operator: TEMPORAL_RANGE
+    comparator: No filter
+    expressionType: SIMPLE
   row_limit: 10000
-  show_value: true
+  show_value: false
   show_legend: false
   increase_color:
     a: 1
@@ -60,7 +64,34 @@ params:
   extra_form_data: {}
   dashboards:
   - 13
-query_context: '{"datasource":{"id":30,"type":"table"},"force":false,"queries":[{"filters":[],"extras":{"time_grain_sqla":"P1D","having":"","where":""},"applied_time_extras":{},"columns":[{"timeGrain":"P1D","columnType":"BASE_AXIS","sqlExpression":"step","label":"step","expressionType":"SQL"}],"metrics":[{"aggregate":"SUM","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"delta","description":null,"expression":null,"filterable":true,"groupby":true,"id":798,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"FLOAT64","type_generic":0,"verbose_name":null,"warning_markdown":null},"datasourceWarning":false,"expressionType":"SIMPLE","hasCustomLabel":false,"label":"SUM(delta)","optionName":"metric_m6kqq925pw_92ynviplu8o","sqlExpression":null}],"orderby":[["step",true]],"annotation_layers":[],"row_limit":10000,"series_limit":0,"order_desc":true,"url_params":{},"custom_params":{},"custom_form_data":{}}],"form_data":{"datasource":"30__table","viz_type":"waterfall","slice_id":397,"x_axis":"step","time_grain_sqla":"P1D","groupby":[],"metric":{"aggregate":"SUM","column":{"advanced_data_type":null,"certification_details":null,"certified_by":null,"column_name":"delta","description":null,"expression":null,"filterable":true,"groupby":true,"id":798,"is_certified":false,"is_dttm":false,"python_date_format":null,"type":"FLOAT64","type_generic":0,"verbose_name":null,"warning_markdown":null},"datasourceWarning":false,"expressionType":"SIMPLE","hasCustomLabel":false,"label":"SUM(delta)","optionName":"metric_m6kqq925pw_92ynviplu8o","sqlExpression":null},"adhoc_filters":[],"row_limit":10000,"show_value":true,"show_legend":false,"increase_color":{"a":1,"b":137,"g":193,"r":90},"decrease_color":{"a":1,"b":85,"g":67,"r":224},"total_color":{"a":1,"b":102,"g":102,"r":102},"x_axis_time_format":"smart_date","x_ticks_layout":"auto","y_axis_format":"SMART_NUMBER","extra_form_data":{},"dashboards":[13],"force":false,"result_format":"json","result_type":"full"},"result_format":"json","result_type":"full"}'
+query_context: '{"datasource": {"id": 30, "type": "table"}, "force": false, "queries":
+  [{"filters": [{"col": "step_date", "op": "TEMPORAL_RANGE", "val": "No filter"}],
+  "extras": {"having": "", "where": ""}, "applied_time_extras": {}, "columns": [{"columnType":
+  "BASE_AXIS", "sqlExpression": "step_date", "label": "step_date", "expressionType":
+  "SQL"}], "metrics": [{"aggregate": "SUM", "column": {"advanced_data_type": null,
+  "certification_details": null, "certified_by": null, "column_name": "delta", "description":
+  null, "expression": null, "filterable": true, "groupby": true, "id": 798, "is_certified":
+  false, "is_dttm": false, "python_date_format": null, "type": "FLOAT64", "type_generic":
+  0, "verbose_name": null, "warning_markdown": null}, "datasourceWarning": false,
+  "expressionType": "SIMPLE", "hasCustomLabel": false, "label": "SUM(delta)", "optionName":
+  "metric_m6kqq925pw_92ynviplu8o", "sqlExpression": null}], "orderby": [["step_date",
+  true]], "annotation_layers": [], "row_limit": 10000, "series_limit": 0, "order_desc":
+  true, "url_params": {}, "custom_params": {}, "custom_form_data": {}}], "form_data":
+  {"datasource": "30__table", "viz_type": "waterfall", "slice_id": 397, "x_axis":
+  "step_date", "groupby": [], "metric": {"aggregate": "SUM", "column": {"advanced_data_type":
+  null, "certification_details": null, "certified_by": null, "column_name": "delta",
+  "description": null, "expression": null, "filterable": true, "groupby": true, "id":
+  798, "is_certified": false, "is_dttm": false, "python_date_format": null, "type":
+  "FLOAT64", "type_generic": 0, "verbose_name": null, "warning_markdown": null}, "datasourceWarning":
+  false, "expressionType": "SIMPLE", "hasCustomLabel": false, "label": "SUM(delta)",
+  "optionName": "metric_m6kqq925pw_92ynviplu8o", "sqlExpression": null}, "adhoc_filters":
+  [{"clause": "WHERE", "subject": "step_date", "operator": "TEMPORAL_RANGE", "comparator":
+  "No filter", "expressionType": "SIMPLE"}], "row_limit": 10000, "show_value": false,
+  "show_legend": false, "increase_color": {"a": 1, "b": 137, "g": 193, "r": 90}, "decrease_color":
+  {"a": 1, "b": 85, "g": 67, "r": 224}, "total_color": {"a": 1, "b": 102, "g": 102,
+  "r": 102}, "x_axis_time_format": "smart_date", "x_ticks_layout": "auto", "y_axis_format":
+  "SMART_NUMBER", "extra_form_data": {}, "dashboards": [13], "force": false, "result_format":
+  "json", "result_type": "full"}, "result_format": "json", "result_type": "full"}'
 cache_timeout: null
 uuid: 44c3444d-00b8-46b3-94ff-b0508a13f42e
 version: 1.0.0

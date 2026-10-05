@@ -6,7 +6,7 @@ offset: 0
 cache_timeout: null
 catalog: null
 schema: cdm
-sql: null
+sql: ''
 params: null
 template_params: null
 filter_select_enabled: true
@@ -23,7 +23,8 @@ metrics:
   description: null
   d3format: null
   currency: null
-  extra: null
+  extra:
+    warning_markdown: ''
   warning_text: null
 columns:
 - column_name: delta
@@ -37,7 +38,8 @@ columns:
   expression: null
   description: null
   python_date_format: null
-  extra: null
+  extra:
+    warning_markdown: null
 - column_name: step
   verbose_name: null
   is_dttm: false
@@ -49,6 +51,19 @@ columns:
   expression: null
   description: null
   python_date_format: null
-  extra: null
+  extra:
+    warning_markdown: null
+- column_name: step_date
+  verbose_name: null
+  is_dttm: true
+  is_active: true
+  type: null
+  advanced_data_type: null
+  groupby: true
+  filterable: true
+  expression: parseDateTime64BestEffort(step)
+  description: null
+  python_date_format: null
+  extra: {}
 version: 1.0.0
 database_uuid: e4cac8fa-9b0e-4833-b66f-c198d249a1a1
